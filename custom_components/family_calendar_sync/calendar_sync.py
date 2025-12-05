@@ -470,7 +470,8 @@ class SyncWorker:
         """Initialize SyncWorker."""
         self._hass = hass
         self._config = config
-        self._copy_all_map: dict = {}
+        # child_entity_id -> set(parent_entity_id, ...)
+        self._copy_all_map: dict[str, set[str]] = {}
 
         options = self._config.get("options", None)
         if options:
@@ -526,15 +527,20 @@ class SyncWorker:
 
         if child_cals := self.config["child"]:
             for cal_config in child_cals:
+                child_entity_id = cal_config["entity_id"]
+
                 if copy_all_from := cal_config.get("copy_all_from", None):
-                    self._copy_all_map[cal_config["entity_id"]] = copy_all_from[
-                        "entity_id"
-                    ]
-                entity_id = cal_config["entity_id"]
+                    # Normalize defensively in case something bypassed schema
+                    if isinstance(copy_all_from, str):
+                        parents = {copy_all_from}
+                    else:
+                        parents = set(copy_all_from)
+                    self._copy_all_map[child_entity_id] = parents
+
                 keywords = cal_config["keywords"]
                 calendar = ChildCalendar(
                     hass=self._hass,
-                    entity_id=entity_id,
+                    entity_id=child_entity_id,
                     sync_date_range=self._sync_date_range,
                     keywords=keywords,
                 )
@@ -562,9 +568,10 @@ class SyncWorker:
     async def _async_sync_parent_to_child(
         self, parent_cal: ParentCalendar, child_cal: ChildCalendar
     ):
-        should_add_all_events: bool = (
-            self._copy_all_map.get(child_cal.entity_id, None) == parent_cal.entity_id
-        )
+        parent_id = parent_cal.entity_id
+        copy_all_parents = self._copy_all_map.get(child_cal.entity_id, set())
+        should_add_all_events: bool = parent_id in copy_all_parents
+
         for parent_event in parent_cal.events:
             if (
                 child_cal.is_a_keyword_match(parent_event.title)

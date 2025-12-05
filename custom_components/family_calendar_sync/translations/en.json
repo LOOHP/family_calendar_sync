@@ -1,0 +1,8 @@
+{
+    "issues": {
+        "copy_all_from_map_deprecated": {
+            "title": "Update your `copy_all_from` configuration",
+            "description": "The `copy_all_from` option in your `family_calendar_sync` configuration is still using the **old YAML map format**.\n\n### ❌ Deprecated format (old)\n```yaml\ncopy_all_from:\n  entity_id: calendar.parent_calendar\n```\n\n### ✅ New required format (list)\n```yaml\ncopy_all_from:\n  - calendar.parent_calendar\n  - calendar.another_parent\n```\n\nThe old map format will stop working in a future release.\n\nUpdate your `configuration.yaml` to the new list format to prevent sync failures.\n"
+        }
+    }
+}
