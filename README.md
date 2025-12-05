@@ -59,8 +59,10 @@ This component is configured using your `configuration.yaml` file. It has three 
 
 #### `options`
 
+Type: Map
+
 - **Purpose**: Configure global settings for how calendar events are synchronized.
-- Keys:
+- Map keys:
     - `days_to_sync` (optional):
         - **Type**: Integer
         - **Description**: The number of days into the future for which events should be synchronized. Default, 7.
@@ -69,8 +71,11 @@ This component is configured using your `configuration.yaml` file. It has three 
         - **Description**: If an event title starts with this string, the event will be ignored during synchronization. Because sometimes the kids don't need to know everything going on 😉.
 
 #### `parent`
+
+Type: List
+
 - **Purpose**: The source (or parent) calendars whose events will be used as the basis for synchronization.
-- **Keys**:
+- List items:
     - Each entry is a map containing:
         - `entity_id`:
             - **Type**: String
@@ -78,15 +83,17 @@ This component is configured using your `configuration.yaml` file. It has three 
 
 #### `child`
 
+Type: List
+
 - **Purpose**: Define the target (or child) calendars where synchronized events should be copied.
-- **Keys**:
+- List items:
     - Each entry is a map with the following properties:
         - `entity_id`:
             - **Type**: String
             - **Description**: The unique identifier of a child calendar (e.g., calendar.dad).
         - `copy_all_from (optional)`:
-            - **Type**: Map
-            - **Description**: Specifies the parent calendar from which to copy all events to the child calendar. Contains:
+            - **Type**: List
+            - **Description**: Specifies the parent calendar(s) from which to copy all events from. Contains:
                 - `entity_id`:
                     - **Type**: String
                     - **Description**: The unique identifier of the parent calendar.
@@ -119,14 +126,14 @@ family_calendar_sync:
     # kids like to see what mom and dad have going on in their day too.
     - entity_id: calendar.dad
       copy_all_from:
-        entity_id: calendar.napoleon_dynamite
+        - calendar.napoleon_dynamite
       keywords:
         - dad
         - napoleon
         - family
     - entity_id: calendar.mom
       copy_all_from:
-        entity_id: calendar.nomi_malone
+        - calendar.nomi_malone
       keywords:
         - mom
         - nomi
@@ -184,4 +191,26 @@ actions:
 - [ ] Create option to allow keywords to be case-sensitive match
 - [ ] Add todo lists
 - [ ] Error handle if a CalDAV or Google Calendar (without two way permissions) entity is used as a `child`
+
+## Migration-copy_all_from
+
+For the `child` section, we are changing the optional argument `copy_all_from` to be a type List instead of type Map. 
+
+Prior:
+
+```
+  child:
+    - entity_id: calendar.dad
+      copy_all_from:
+        entity_id: calendar.napoleon_dynamite
+```
+
+After:
+
+```
+  child:
+    - entity_id: calendar.dad
+      copy_all_from:
+        - calendar.napoleon_dynamite
+```
 
