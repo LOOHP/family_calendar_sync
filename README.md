@@ -12,6 +12,8 @@ The idea is to read from one or more `parent` calendar entities then copy the ev
     - Works as both `parent` and `child` if it's set up with two-way sync permissions.
 - Local Calendar:
     - Works as both `parent` and `child`.
+- Remote Calendar:
+    - Only works as `parent` because they are imported from remote.
 
 ## Background
 
