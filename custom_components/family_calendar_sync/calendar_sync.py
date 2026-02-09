@@ -11,7 +11,7 @@ from homeassistant.components.calendar import CalendarEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
-from .const import DEFAULT_DAYS_TO_SYNC, HASH_LENGTH
+from .const import DEFAULT_DAYS_TO_SYNC, DEFAULT_DAYS_TO_SYNC_PAST, HASH_LENGTH
 
 HASH_REGEX = re.compile(r"\[([a-z0-9]{8})\]", re.IGNORECASE)
 
@@ -24,12 +24,19 @@ class SyncDateRange:
 
     start: datetime
     days_to_sync: int
+    days_to_sync_past: int = 0
 
     @property
     def end(self) -> datetime:
         """Return the end datetime."""
         end_datetime = self.start + timedelta(days=self.days_to_sync)
         return dt_util.as_local(end_datetime)
+
+    @property
+    def start_including_past(self) -> datetime:
+        """Return the start datetime including past boundary."""
+        start_datetime = self.start - timedelta(days=self.days_to_sync_past)
+        return dt_util.as_local(start_datetime)
 
 
 class Event:
@@ -310,7 +317,7 @@ class Calendar:
         if cal:
             events_data = await cal.async_get_events(
                 self._hass,
-                self._sync_date_range.start,
+                self._sync_date_range.start_including_past,
                 self._sync_date_range.end,
             )
 
@@ -482,6 +489,7 @@ class SyncWorker:
         options = self._config.get("options", None)
         if options:
             days_to_sync = options.get("days_to_sync", DEFAULT_DAYS_TO_SYNC)
+            days_to_sync_past = options.get("days_to_sync_past", DEFAULT_DAYS_TO_SYNC_PAST)
             self._ignore_event_if_title_starts_with = options.get(
                 "ignore_event_if_title_starts_with", None
             )
@@ -492,6 +500,7 @@ class SyncWorker:
         self._sync_date_range = SyncDateRange(
             start=dt_util.as_local(datetime.now()),
             days_to_sync=days_to_sync,
+            days_to_sync_past=days_to_sync_past,
         )
 
         self._calendars: dict[str, list[Calendar]] = {"parent": [], "child": []}
