@@ -15,6 +15,8 @@ from .const import DEFAULT_DAYS_TO_SYNC, DEFAULT_DAYS_TO_SYNC_PAST, HASH_LENGTH
 
 HASH_REGEX = re.compile(r"\[([a-z0-9]{8})\]", re.IGNORECASE)
 
+MIN_EVENT_DURATION = timedelta(seconds=1)
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -443,6 +445,7 @@ class ChildCalendar(Calendar):
         payload = {}
         payload = event.get_data_for_event_creation()
         payload["entity_id"] = self.entity_id
+        payload = self.ensure_min_duration(payload)
         _LOGGER.debug("about to create event with payload %s", payload)
         await self._hass.services.async_call(
             "calendar",
@@ -474,6 +477,34 @@ class ChildCalendar(Calendar):
             for hashed_value in hashed_values
             if hashed_value in self.hash_set
         ]
+
+    def ensure_min_duration(self, payload: dict) -> dict:
+        """Extend events that are less than minimum length to avoid errors"""
+        if "start_date_time" in payload and "end_date_time" in payload:
+            start = payload["start_date_time"]
+            end = payload["end_date_time"]
+
+            if isinstance(start, str):
+                start_dt = dt_util.parse_datetime(start)
+            else:
+                start_dt = start
+
+            if isinstance(end, str):
+                end_dt = dt_util.parse_datetime(end)
+            else:
+                end_dt = end
+
+            if start_dt and end_dt and end_dt <= start_dt:
+                payload["end_date_time"] = start_dt + MIN_EVENT_DURATION
+
+        if "start_date" in payload and "end_date" in payload:
+            start_d = payload["start_date"]
+            end_d = payload["end_date"]
+            
+            if end_d == start_d:
+                payload["end_date"] = start_d + timedelta(days=1)
+
+        return payload
 
 
 class SyncWorker:
